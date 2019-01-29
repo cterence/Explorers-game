@@ -1,15 +1,21 @@
 #!/usr/bin/python3
 
+# Auteur : Térence Chateigné
+
 from tkinter import *
 import random, math
 
-goal = (300, 50)
+
 it, itMax = 0, 100000 # Nombre d'itérations
+height, width = 300, 200
+goal = (width/2, height/2)
+refreshRate = 50
 
 class Dot: # Objet point
-	def __init__(self) : 
-		self.x = 300
-		self.y = 550
+	def __init__(self) :
+		global width, height 
+		self.x = width/2
+		self.y = 3*height/4
 		self.alive = True
 		self.score = 0
 		self.moves = []
@@ -18,37 +24,39 @@ class Dot: # Objet point
 		return "x : "+str(self.x)+", y : "+str(self.y)+", alive : "+str(self.alive)+", score : "+str(self.score)
 		
 	def isAlive(self) :
-		if self.x < 0 or self.x > 600 or self.y < 0 or self.y > 600 :
+		if self.x <= 0 or self.x >= width-5 or self.y <= 0 or self.y >= height-5 or (self.x < goal[0]+10 and self.x > goal[0]-10 and self.y < goal[1]+10 and self.y > goal[1]-10) :
 			self.alive = False
 			
 	def move(self) :
-		newX, newY = self.x, self.y
-		rand = random.random()
-		
-		if (rand <= 0.25) :
-			newX+=5
-		elif (rand <= 0.5) :
-			newX-=5
-		elif (rand <= 0.75) :
-			newY+=5
-		else :
-			newY-=5
-		
-		self.moves.append((newX,newY))
-		self.x, self.y = newX, newY
-		self.fitness()
 		self.isAlive()
+		if (self.alive == True) :
+			newX, newY = self.x, self.y
+			rand = random.random()
+			
+			if (rand <= 0.25) :
+				newX+=5
+			elif (rand <= 0.5) :
+				newX-=5
+			elif (rand <= 0.75) :
+				newY+=5
+			else :
+				newY-=5
+			
+			self.moves.append((newX,newY))
+			self.x, self.y = newX, newY
+			self.fitness()
+		
 		
 	def fitness(self) :
 		global goal
-		self.score = math.sqrt((self.x-goal[0])**2+(self.y-goal[1])**2)
+		self.score = len(self.moves)*math.sqrt((self.x-goal[0])**2+(self.y-goal[1])**2)
 	
 
 class Board:
 	def __init__(self) :
-		self.canvas = Canvas(fenetre, width=600, height=600, background='white')
+		global height, width
+		self.canvas = Canvas(root, width=width, height=height, background='white')
 		self.dots = []
-		self.goal = (300, 50)
 		self.createPopulation()
 
 	def addDot(self, dot) :
@@ -62,25 +70,36 @@ class Board:
 	def play(self) :
 		global goal, it
 		self.canvas.delete("all")
-		self.canvas.create_oval(self.goal[0], self.goal[1], self.goal[0]+5, self.goal[1]+5, fill='green')	
+		self.canvas.create_oval(goal[0], goal[1], goal[0]+5, goal[1]+5, fill='green')	
 		self.update()
-		if (it <= itMax) :
-			it += 1
-			self.canvas.after(5, self.play)
+		self.canvas.after(refreshRate, self.play)
 	
 	def update(self) :
 		for dot in self.dots :
-			if dot.alive == True :
-				dot.move()
-				print(dot)
-				self.canvas.create_oval(dot.x, dot.y, dot.x+5, dot.y+5, fill='black')
-		
+			dot.move()
+			self.canvas.create_oval(dot.x, dot.y, dot.x+5, dot.y+5, fill='black')
+	
+	def selectFittest(self) :
+		minFitness = sys.maxsize
+		for dot in self.dots :
+			if dot.score < minFitness :
+				fittest = dot
+				minFitness = dot.score
+		return fittest
+
 if __name__ == '__main__' :
 
-	
-	fenetre = Tk()
+	generation = 0
+	root = Tk()
 	board = Board()
 	board.canvas.pack()
-	board.play()
-
-	fenetre.mainloop()
+	while generation <= 0 :
+		root.title("Generation "+str(generation))
+		board.play()
+		root.after(5000, root.quit)
+		root.mainloop()
+		fittest = board.selectFittest()
+		print("Fittest : "+str(fittest))
+		print(len(fittest.moves))
+		generation += 1
+		
