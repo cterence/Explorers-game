@@ -3,13 +3,17 @@
 # Auteur : Térence Chateigné
 
 from tkinter import *
-import random, math
+import random, math, time
 
 
 it, itMax = 0, 100000 # Nombre d'itérations
 height, width = 300, 200
 goal = (width/2, height/2)
-refreshRate = 50
+refreshRate = 500
+genTime = 5000
+population = 1
+firstGen = True
+stop = False
 
 class Dot: # Objet point
 	def __init__(self) :
@@ -19,6 +23,7 @@ class Dot: # Objet point
 		self.alive = True
 		self.score = 0
 		self.moves = []
+		self.fittest = False
 	
 	def __str__(self) :
 		return "x : "+str(self.x)+", y : "+str(self.y)+", alive : "+str(self.alive)+", score : "+str(self.score)
@@ -32,7 +37,6 @@ class Dot: # Objet point
 		if (self.alive == True) :
 			newX, newY = self.x, self.y
 			rand = random.random()
-			
 			if (rand <= 0.25) :
 				newX+=5
 			elif (rand <= 0.5) :
@@ -41,22 +45,46 @@ class Dot: # Objet point
 				newY+=5
 			else :
 				newY-=5
-			
-			self.moves.append((newX,newY))
+			self.moves.append((newX-self.x,newY-self.y))
 			self.x, self.y = newX, newY
 			self.fitness()
-		
-		
+	
 	def fitness(self) :
 		global goal
 		self.score = len(self.moves)*math.sqrt((self.x-goal[0])**2+(self.y-goal[1])**2)
 	
+	def moveMutated(self, fittest) :
+		self.isAlive()
+		print(len(self.moves))
+		if (self.alive == True) :	
+			newX, newY = self.x, self.y
+			if (random.random() <= 0.2 and self.fittest == False) or len(self.moves) >= len(fittest.moves) :
+				print(self.x, self.y)
+				rand = random.random()
+				if (rand <= 0.25) :
+					newX+=5
+				elif (rand <= 0.5) :
+					newX-=5
+				elif (rand <= 0.75) :
+					newY+=5
+				else :
+					newY-=5
+			else :
+				print(fittest.moves[len(self.moves)][0], fittest.moves[len(self.moves)][1])
+				newX =+ fittest.moves[len(self.moves)][0]
+				newY =+ fittest.moves[len(self.moves)][1]
+			
+			self.moves.append((newX-self.x,newY-self.y))
+			self.x, self.y = newX, newY
+		
+		#print(self.x, self.y)
 
-class Board:
+class Board :
 	def __init__(self) :
 		global height, width
 		self.canvas = Canvas(root, width=width, height=height, background='white')
 		self.dots = []
+		self.fittest = Dot()
 		self.createPopulation()
 
 	def addDot(self, dot) :
@@ -64,28 +92,41 @@ class Board:
 		self.canvas.create_oval(dot.x, dot.y, dot.x+5, dot.y+5, fill='black')	
 	
 	def createPopulation(self) :
-		for i in range(50) :
+		for i in range(population) :
 			self.dots.append(Dot())
 	
-	def play(self) :
-		global goal, it
-		self.canvas.delete("all")
-		self.canvas.create_oval(goal[0], goal[1], goal[0]+5, goal[1]+5, fill='green')	
-		self.update()
-		self.canvas.after(refreshRate, self.play)
-	
-	def update(self) :
+	def update(self, firstGen) :
 		for dot in self.dots :
-			dot.move()
+			if firstGen == True :
+				dot.move()
+			else :
+				dot.moveMutated(self.fittest)
 			self.canvas.create_oval(dot.x, dot.y, dot.x+5, dot.y+5, fill='black')
 	
+	def play(self) :
+		global goal, stop
+		self.canvas.delete("all")
+		self.canvas.create_oval(goal[0], goal[1], goal[0]+5, goal[1]+5, fill='green')	
+		self.update(firstGen)
+		print(stop)
+		if stop == False :
+			self.canvas.after(refreshRate, self.play)
+			
 	def selectFittest(self) :
 		minFitness = sys.maxsize
 		for dot in self.dots :
 			if dot.score < minFitness :
-				fittest = dot
+				self.fittest = dot
 				minFitness = dot.score
-		return fittest
+		
+	def heritage(self) :
+		self.dots = []
+		self.fittest.alive, self.fittest.x, self.fittest.y = True, width/2, 3*height/4
+		self.dots.append(self.fittest)
+		self.fittest.fittest, self.fittest.moves = False, []
+		for i in range(population-1) :
+			self.dots.append(self.fittest)
+			
 
 if __name__ == '__main__' :
 
@@ -93,13 +134,29 @@ if __name__ == '__main__' :
 	root = Tk()
 	board = Board()
 	board.canvas.pack()
-	while generation <= 0 :
-		root.title("Generation "+str(generation))
+	root.title("Generation "+str(generation))
+	board.play()
+	root.after(genTime, root.quit)
+	root.mainloop()
+	stop = True
+	board.selectFittest()
+	firstGen = False
+	generation += 1
+	
+	while generation <= 1 :
+		stop = False
+		board.heritage()
 		board.play()
-		root.after(5000, root.quit)
+		root.after(genTime, root.quit)
 		root.mainloop()
-		fittest = board.selectFittest()
-		print("Fittest : "+str(fittest))
-		print(len(fittest.moves))
+		stop = True
+		board.selectFittest()
 		generation += 1
+	
+	
+	
+	
+	
+	
+	
 		
