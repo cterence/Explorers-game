@@ -3,8 +3,10 @@
 from tkinter import *
 import random
 
-class Dot:
-	def __init__(self) :
+
+
+class Dot: # Objet point
+	def __init__(self) : 
 		self.x = 300
 		self.y = 550
 		self.alive = True
@@ -34,12 +36,16 @@ class Dot:
 		self.moves.append((newX,newY))
 		self.x, self.y = newX, newY
 		self.isAlive()
+		
+	#def fitness(self, goal) :
+		
 	
 
 class Board:
 	def __init__(self) :
 		self.canvas = Canvas(fenetre, width=600, height=600, background='white')
 		self.dots = []
+		self.goal = (300, 50)
 		self.createPopulation()
 
 	def addDot(self, dot) :
@@ -50,30 +56,28 @@ class Board:
 		for i in range(50) :
 			self.dots.append(Dot())
 	
-	def displayDots(self) :
+	def play(self) :
+		global goal
 		self.canvas.delete("all")
-		self.canvas.create_oval(300, 50, 305, 55, fill='green')	
+		self.canvas.create_oval(self.goal[0], self.goal[1], self.goal[0]+5, self.goal[1]+5, fill='green')	
 		self.update()
-		self.canvas.after(50, self.displayDots)
+		self.canvas.after(50, self.play)
 	
 	def update(self) :
 		for dot in self.dots :
-			print("Before :"+str(dot))
 			if dot.alive == True :
 				dot.move()
 				self.canvas.create_oval(dot.x, dot.y, dot.x+5, dot.y+5, fill='black')
-				print("After :"+str(dot))
-		print('end')
 		
 if __name__ == '__main__' :
 
 	
 	fenetre = Tk()
-	
 	board = Board()
-	
 	board.canvas.pack()
-	
-	board.displayDots()
+	board.play()
+
+	goal = ()
+
 
 	fenetre.mainloop()
