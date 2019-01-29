@@ -1,9 +1,10 @@
 #!/usr/bin/python3
 
 from tkinter import *
-import random
+import random, math
 
-
+goal = (300, 50)
+it, itMax = 0, 100000 # Nombre d'itérations
 
 class Dot: # Objet point
 	def __init__(self) : 
@@ -35,10 +36,12 @@ class Dot: # Objet point
 		
 		self.moves.append((newX,newY))
 		self.x, self.y = newX, newY
+		self.fitness()
 		self.isAlive()
 		
-	#def fitness(self, goal) :
-		
+	def fitness(self) :
+		global goal
+		self.score = math.sqrt((self.x-goal[0])**2+(self.y-goal[1])**2)
 	
 
 class Board:
@@ -57,16 +60,19 @@ class Board:
 			self.dots.append(Dot())
 	
 	def play(self) :
-		global goal
+		global goal, it
 		self.canvas.delete("all")
 		self.canvas.create_oval(self.goal[0], self.goal[1], self.goal[0]+5, self.goal[1]+5, fill='green')	
 		self.update()
-		self.canvas.after(50, self.play)
+		if (it <= itMax) :
+			it += 1
+			self.canvas.after(5, self.play)
 	
 	def update(self) :
 		for dot in self.dots :
 			if dot.alive == True :
 				dot.move()
+				print(dot)
 				self.canvas.create_oval(dot.x, dot.y, dot.x+5, dot.y+5, fill='black')
 		
 if __name__ == '__main__' :
@@ -76,8 +82,5 @@ if __name__ == '__main__' :
 	board = Board()
 	board.canvas.pack()
 	board.play()
-
-	goal = ()
-
 
 	fenetre.mainloop()
