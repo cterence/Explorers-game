@@ -40,10 +40,15 @@ class Board:
 	def __init__(self) :
 		self.canvas = Canvas(fenetre, width=600, height=600, background='white')
 		self.dots = []
+		self.createPopulation()
 
 	def addDot(self, dot) :
 		self.dots.append(dot)
 		self.canvas.create_oval(dot.x, dot.y, dot.x+5, dot.y+5, fill='black')	
+	
+	def createPopulation(self) :
+		for i in range(50) :
+			self.dots.append(Dot())
 	
 	def displayDots(self) :
 		self.canvas.delete("all")
@@ -64,12 +69,8 @@ if __name__ == '__main__' :
 
 	
 	fenetre = Tk()
-	dot1 = Dot()
-	dot2 = Dot()
 	
 	board = Board()
-	board.addDot(dot1)
-	board.addDot(dot2)
 	
 	board.canvas.pack()
 	
