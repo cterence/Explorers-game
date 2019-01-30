@@ -10,11 +10,11 @@ import copy
 
 
 it, itMax = 0, 100000  # Nombre d'itérations
-height, width = 300, 200
-goal = (width/2, height/2)
-refreshRate = 50
+height, width = 600, 200
+goal = (width/2, height/6)
+refreshRate = 2
 genTime = 5000
-population = 5
+population = 1000
 generations = 10
 firstGen = True
 
@@ -55,14 +55,13 @@ class Dot:  # Objet point
 
 	def fitness(self):
 		global goal
-		self.score = len(self.moves) * \
-			((self.x-goal[0])**2+(self.y-goal[1])**2)
+		self.score = len(self.moves)*((self.x-goal[0])**2+(self.y-goal[1])**2)**2
 
 	def moveMutated(self, fittest):
 		self.isAlive()
 		if (self.alive == True):
 			newX, newY = self.x, self.y
-			if (random.random() <= 0.2 and self.fittest == False) or len(self.moves) >= len(fittest.moves):
+			if (random.random() <= 0.1 or len(self.moves) >= len(fittest.moves)) and self.fittest == False:
 				rand = random.random()
 				if (rand <= 0.25):
 					newX += 5
@@ -73,11 +72,13 @@ class Dot:  # Objet point
 				else:
 					newY -= 5
 			else:
+				
 				newX += fittest.moves[len(self.moves)][0]
 				newY += fittest.moves[len(self.moves)][1]
 
 			self.moves.append((newX-self.x, newY-self.y))
 			self.x, self.y = newX, newY
+		self.fitness()
 
 
 class Board:
@@ -123,6 +124,7 @@ class Board:
 	def selectFittest(self):
 		minFitness = sys.maxsize
 		for dot in self.dots:
+			print(dot)
 			if dot.score < minFitness:
 				self.fittest = dot
 				minFitness = dot.score
