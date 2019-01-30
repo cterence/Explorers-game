@@ -9,11 +9,10 @@ import random, math, time
 it, itMax = 0, 100000 # Nombre d'itérations
 height, width = 300, 200
 goal = (width/2, height/2)
-refreshRate = 500
+refreshRate = 50
 genTime = 5000
-population = 1
+population = 10
 firstGen = True
-stop = False
 
 class Dot: # Objet point
 	def __init__(self) :
@@ -85,6 +84,7 @@ class Board :
 		self.canvas = Canvas(root, width=width, height=height, background='white')
 		self.dots = []
 		self.fittest = Dot()
+		self.job = None
 		self.createPopulation()
 
 	def addDot(self, dot) :
@@ -104,13 +104,16 @@ class Board :
 			self.canvas.create_oval(dot.x, dot.y, dot.x+5, dot.y+5, fill='black')
 	
 	def play(self) :
-		global goal, stop
+		global goal
 		self.canvas.delete("all")
 		self.canvas.create_oval(goal[0], goal[1], goal[0]+5, goal[1]+5, fill='green')	
 		self.update(firstGen)
-		print(stop)
-		if stop == False :
-			self.canvas.after(refreshRate, self.play)
+		self.job = self.canvas.after(refreshRate, self.play)
+	
+	def cancel(self) :
+		if self.job is not None :
+			self.canvas.after_cancel(self.job)
+			self.job = None
 			
 	def selectFittest(self) :
 		minFitness = sys.maxsize
@@ -138,18 +141,16 @@ if __name__ == '__main__' :
 	board.play()
 	root.after(genTime, root.quit)
 	root.mainloop()
-	stop = True
+	board.cancel()
 	board.selectFittest()
 	firstGen = False
 	generation += 1
 	
 	while generation <= 1 :
-		stop = False
 		board.heritage()
 		board.play()
 		root.after(genTime, root.quit)
 		root.mainloop()
-		stop = True
 		board.selectFittest()
 		generation += 1
 	
