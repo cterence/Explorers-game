@@ -3,21 +3,19 @@
 # Auteur : Térence Chateigné
 
 from tkinter import *
-import random
-import math
-import time
-import copy
+import random, math, time, copy
 
+### Variables globales ###
 
-it, itMax = 0, 100000  # Nombre d'itérations
-height, width = 600, 200
+height, width = 300, 200
 goal = (width/2, height/6)
-refreshRate = 2
-genTime = 5000
-population = 1000
-generations = 10
+refreshRate = 10
+population = 100
+generations = 100
 firstGen = True
+won = False
 
+### Classe point ###
 
 class Dot:  # Objet point
 	def __init__(self):
@@ -35,6 +33,11 @@ class Dot:  # Objet point
 	def isAlive(self):
 		if self.x <= 0 or self.x >= width-5 or self.y <= 0 or self.y >= height-5 or (self.x < goal[0]+10 and self.x > goal[0]-10 and self.y < goal[1]+10 and self.y > goal[1]-10):
 			self.alive = False
+	
+	def hasWon(self):
+		if self.x < goal[0]+10 and self.x > goal[0]-10 and self.y < goal[1]+10 and self.y > goal[1]-10 :
+			return True
+		return False
 
 	def move(self):
 		self.isAlive()
@@ -80,6 +83,7 @@ class Dot:  # Objet point
 			self.x, self.y = newX, newY
 		self.fitness()
 
+### Classe plateau ###
 
 class Board:
 	def __init__(self):
@@ -99,6 +103,7 @@ class Board:
 			self.dots.append(Dot())
 
 	def update(self, firstGen):
+		global won
 		for dot in self.dots:
 			if firstGen == True:
 				dot.move()
@@ -108,13 +113,20 @@ class Board:
 				self.canvas.create_oval(dot.x, dot.y, dot.x+5, dot.y+5, fill='red')
 			else :
 				self.canvas.create_oval(dot.x, dot.y, dot.x+5, dot.y+5, fill='black')
+			if dot.hasWon():
+				won = True
+				break
 
 	def play(self):
-		global goal
+		global goal, won
 		self.canvas.delete("all")
 		self.canvas.create_oval(goal[0], goal[1], goal[0]+5, goal[1]+5, fill='green')
 		self.update(firstGen)
-		self.job = self.canvas.after(refreshRate, self.play)
+		if won == False :
+			self.job = self.canvas.after(refreshRate, self.play)
+		else :
+			self.killAll()
+		
 
 	def cancel(self):
 		if self.job is not None:
@@ -124,7 +136,6 @@ class Board:
 	def selectFittest(self):
 		minFitness = sys.maxsize
 		for dot in self.dots:
-			print(dot)
 			if dot.score < minFitness:
 				self.fittest = dot
 				minFitness = dot.score
@@ -133,13 +144,20 @@ class Board:
 	def heritage(self):
 		self.dots = []
 		fitDot = copy.deepcopy(self.fittest)
-		fitDot.alive, fitDot.x, fitDot.y, fitDot.moves = True, width/2, 3*height/4, []
+		fitDot.alive, fitDot.x, fitDot.y, fitDot.moves, fitDot.win = True, width/2, 3*height/4, [], False
 		self.dots.append(fitDot)
 		normalDot = copy.deepcopy(fitDot)
 		normalDot.fittest = False
 		for i in range(population-1):
 			self.dots.append(copy.deepcopy(normalDot))
 
+	def killAll(self):
+		global root
+		for dot in self.dots :
+			dot.alive = False
+		root.after(1000, root.quit)
+
+### Main ###
 
 if __name__ == '__main__':
 
@@ -149,7 +167,6 @@ if __name__ == '__main__':
 	board.canvas.pack()
 	root.title("Generation "+str(generation))
 	board.play()
-	root.after(genTime, root.quit)
 	root.mainloop()
 	board.cancel()
 	board.selectFittest()
@@ -157,10 +174,10 @@ if __name__ == '__main__':
 	generation += 1
 
 	while generation <= generations:
+		won = False
 		root.title("Generation "+str(generation))
 		board.heritage()
 		board.play()
-		root.after(genTime, root.quit)
 		root.mainloop()
 		board.cancel()
 		board.selectFittest()
