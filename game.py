@@ -7,21 +7,24 @@ import random, math, time, copy
 
 ### Variables globales ###
 
-height, width = 300, 200
-goal = (width/2, height/6)
-refreshRate = 10
+height, width = 300, 100
+goal = (width/4, 5*height/6)
+start = (3*width/4, height/6)
+refreshRate = 1
 population = 100
 generations = 100
 firstGen = True
+goalReached = False
 won = False
+allDead = False
 
 ### Classe point ###
 
 class Dot:  # Objet point
 	def __init__(self):
 		global width, height
-		self.x = width/2
-		self.y = 3*height/4
+		self.x = start[0]
+		self.y = start[1]
 		self.alive = True
 		self.score = 0
 		self.moves = []
@@ -58,7 +61,14 @@ class Dot:  # Objet point
 
 	def fitness(self):
 		global goal
-		self.score = len(self.moves)*((self.x-goal[0])**2+(self.y-goal[1])**2)**2
+		if goalReached == True:
+			if abs(self.x-goal[0]) == 5 and abs(self.y-goal[1]) == 5 :# Cas où le point arrive en diag du but
+				print("diag")
+				self.score = len(self.moves)*(self.y-goal[1]) # Mise à zéro de la différence entre le x du point et du goal
+			else :
+				self.score = len(self.moves)*math.sqrt((self.x-goal[0])**2+(self.y-goal[1])**2)
+		else :
+			self.score = math.sqrt((self.x-goal[0])**2+(self.y-goal[1])**2)
 
 	def moveMutated(self, fittest):
 		self.isAlive()
@@ -103,7 +113,8 @@ class Board:
 			self.dots.append(Dot())
 
 	def update(self, firstGen):
-		global won
+		global won, allDead
+		allDead = True
 		for dot in self.dots:
 			if firstGen == True:
 				dot.move()
@@ -116,17 +127,22 @@ class Board:
 			if dot.hasWon():
 				won = True
 				break
+			if dot.alive :
+				allDead = False
 
 	def play(self):
-		global goal, won
+		global goal, won, firstGen, goalReached
 		self.canvas.delete("all")
 		self.canvas.create_oval(goal[0], goal[1], goal[0]+5, goal[1]+5, fill='green')
 		self.update(firstGen)
-		if won == False :
+		if won == False and allDead == False:
 			self.job = self.canvas.after(refreshRate, self.play)
 		else :
-			self.killAll()
-		
+			if allDead == False :
+				self.killAll()
+				firstGen = False
+				goalReached = True
+			root.after(1000, root.quit)
 
 	def cancel(self):
 		if self.job is not None:
@@ -140,22 +156,24 @@ class Board:
 				self.fittest = dot
 				minFitness = dot.score
 		self.fittest.fittest = True
+		print("Score du fittest :"+str(self.fittest.score), self.fittest.x-goal[0], self.fittest.y-goal[1])
 
 	def heritage(self):
 		self.dots = []
 		fitDot = copy.deepcopy(self.fittest)
-		fitDot.alive, fitDot.x, fitDot.y, fitDot.moves, fitDot.win = True, width/2, 3*height/4, [], False
-		self.dots.append(fitDot)
+		fitDot.alive, fitDot.x, fitDot.y, fitDot.moves, fitDot.win = True, start[0], start[1], [], False
+		
 		normalDot = copy.deepcopy(fitDot)
 		normalDot.fittest = False
 		for i in range(population-1):
 			self.dots.append(copy.deepcopy(normalDot))
+		self.dots.append(fitDot)
 
 	def killAll(self):
 		global root
 		for dot in self.dots :
 			dot.alive = False
-		root.after(1000, root.quit)
+		
 
 ### Main ###
 
@@ -165,20 +183,23 @@ if __name__ == '__main__':
 	root = Tk()
 	board = Board()
 	board.canvas.pack()
-	root.title("Generation "+str(generation))
+	root.title("Gen "+str(generation))
 	board.play()
 	root.mainloop()
+	firstGen = False
 	board.cancel()
 	board.selectFittest()
-	firstGen = False
 	generation += 1
 
 	while generation <= generations:
 		won = False
-		root.title("Generation "+str(generation))
+		root.title("Gen "+str(generation))
 		board.heritage()
 		board.play()
 		root.mainloop()
 		board.cancel()
 		board.selectFittest()
 		generation += 1
+
+#voir écart entre ancien et nouveau fittest, afficher le nombre de mouvements du fittest dans la fenêtre
+#fontion calcul score privilégie trop le peu de mouvements (si le point meurt rapidement = bien)
